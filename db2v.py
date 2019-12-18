@@ -40,11 +40,16 @@ class db2v:
         print("#-------------------------------------#")
         print(temp_data.head())
         print("#-------------------------------------#")
-        target_field = input("DB2V#:Enter 'target field' to base history/context on (i.e. customer IDs):")
-        context_field = input("DB2V#:Enter 'context field' to build history of (i.e. purchase/invoice IDs):")
-        temp_data[target_field] = temp_data[target_field].astype(str)
-        temp_data[context_field] = temp_data[context_field].astype(str)
-        target_ids = temp_data[target_field].unique().tolist()
+        while(True):
+            target_field = input("INPUT>Enter 'target field' to base history/context on (case sensitive):")
+            context_field = input("INPUT>Enter 'context field' to build history of (case sensitive):")
+            try:
+                temp_data[target_field] = temp_data[target_field].astype(str)
+                temp_data[context_field] = temp_data[context_field].astype(str)
+                target_ids = temp_data[target_field].unique().tolist()
+                break
+            except KeyError:
+                print("ERROR  Invalid field names, returning to prompt.")
         data = []
         if self.sc != None:
             target_ids = self.sc.parallelize(target_ids)
