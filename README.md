@@ -1,5 +1,5 @@
 # database2vector
-Application of Word2Vector to various forms of inputs.
+Application of Word2Vector with various forms of inputs.
 
 Online Retail Database Excel
 https://archive.ics.uci.edu/ml/machine-learning-databases/00352/Online%20Retail.xlsx
