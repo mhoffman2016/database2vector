@@ -11,6 +11,10 @@ from gensim.models import Word2Vec, KeyedVectors
 parser = argparse.ArgumentParser(description = 'TODO',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("input",help="Input file or directory to be used as corpus.")
 parser.add_argument("--output",default="",help="Output file for the keyed vector to be saved (end with '.kv' extension).")
+parser.add_argument("--min_count",default=1,help="Minimum frequency before the term is introduced into the vocab.")
+parser.add_argument("--size",default=1000,help="Dimensionality of the vectors produced.")
+parser.add_argument("--window",default=10,help="How many items in the context before and after the target are considered.")
+parser.add_argument("--cbow",default=False,help="Create Word2Vec using the continuous bag of words model.",action="store_true")
 parser.add_argument("--pyspark",help="Run the script with Pyspark.",action="store_true")
 parser.add_argument("--master",default="local[20]",help="Spark Master.")
 args = parser.parse_args()
@@ -20,36 +24,26 @@ if __name__ == "__main__":
     """
     TODO
     """
-    print("INFO  Starting 'Database2Vector' main process.")
 
     # Creating db2v with SparkContext if specified through command line
     if args.pyspark:
         sc = SparkContext(args.master, "SparkContext used to tokenize.")
         sc.setLogLevel("ERROR")
-        print("INFO  Parellel option selected.")
         db2v = db2v(sc)
     else:
         db2v = db2v()
 
     # Loading keyed vector model or creating one from input
     if ".kv" in args.input:
-        db2v.kv = KeyedVectors.load(args.input)
-        print("INFO  Using model from '%s'." % args.input)
+        db2v.load(args.input)
     else:
-        data = db2v.tokenize(args.input)
-        param = (1, 1000, 10, 1)
-        db2v.kv = Word2Vec(data,
-                           min_count = param[0],
-                           size = param[1],
-                           window = param[2],
-                           sg = param[3]).wv
+        db2v.createKeyedVector(args.input, args.min_count, args.size, args.window, args.cbow)
         # Save keyed vector if given an output path
         if args.output != "":
-            print("INFO  Saving model in '%s'." % args.output)
-            db2v.kv.save(args.output)
+            db2v.save(args.output)
     vocab = list(db2v.kv.vocab.keys())
 
-    # Begin user loop
+    # Begin custom user loop
     print("#------------------------------------------#")
     print("| Type 'vocab' to get sample terms.        |")
     print("| Type a term to find other similar terms. |")
@@ -65,7 +59,7 @@ if __name__ == "__main__":
         else:
             try:
                 similar_terms = [pair[0].lower() for pair in db2v.kv.most_similar(uin,topn=10)]
-                print("INFO  Terms most similar to '%s'." % uin)
+                print("INFO  Terms most similar to '%s':" % uin)
                 for rank, term in enumerate(similar_terms, 1):
                     print("%d. %s" % (rank, term))
             except:

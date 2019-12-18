@@ -27,19 +27,66 @@ class db2v:
         """
         TODO
         """
+        print("INFO  Starting 'Database2Vector' main process.")
         self.sc = sc
+        self.kv = None
 
 
-    def xlsxTokenize(self, data_input):
+    def save(self, output_path):
         """
         TODO
         """
-        print("INFO  Excel file given, reading file (user will select fields to use for target/context)")
-        temp_data = pd.read_excel(data_input)
+        self.kv.save(output_path)
+        print("INFO  Saving model in '%s'." % output_path)
+        return
+
+
+    def load(self, input_path):
+        """
+        TODO
+        """
+        try:
+            self.kv = KeyedVectors.load(input_path)
+            print("INFO  Using model from '%s'" % input_path)
+        except:
+            print("ERROR  Cannot open input file. Exiting...")
+            exit(-1)
+        return
+
+
+    def createKeyedVector(self, input_path, min_count, size, window, cbow):
+        """
+        TODO
+        """
+        data = self.tokenize(input_path)
+        param = (min_count, size, window, not cbow)
+        self.kv = Word2Vec(data,
+                           min_count = param[0],
+                           size = param[1],
+                           window = param[2],
+                           sg = param[3]).wv
+        return
+
+
+    def tokenize(self, input_path):
+        """
+        TODO
+        """
+        if "xlsx" in input_path:
+            return self.xlsxTokenize(input_path)
+        return self.miscTokenize(input_path)
+
+
+    def xlsxTokenize(self, input_path):
+        """
+        TODO
+        """
+        print("INFO  Excel file given, reading file (user will select fields to use for target/context).")
+        temp_data = pd.read_excel(input_path)
         temp_data.dropna(inplace=True)
-        print("#-------------------------------------#")
+        print("#------------------------------------------#")
         print(temp_data.head())
-        print("#-------------------------------------#")
+        print("#------------------------------------------#")
         while(True):
             target_field = input("INPUT>Enter 'target field' to base history/context on (case sensitive):")
             context_field = input("INPUT>Enter 'context field' to build history of (case sensitive):")
@@ -50,6 +97,7 @@ class db2v:
                 break
             except KeyError:
                 print("ERROR  Invalid field names, returning to prompt.")
+        print("INFO  Fields accepted, beginning tokenization.")
         data = []
         if self.sc != None:
             target_ids = self.sc.parallelize(target_ids)
@@ -63,13 +111,13 @@ class db2v:
         return data
 
 
-    def miscTokenize(self, data_input):
+    def miscTokenize(self, input_path):
         """
         TODO
         """
-        print("INFO  Reading '%s' file as sentences" % data_input)
+        print("INFO  Reading '%s' file as sentences" % input_path)
         try:
-            temp_data = open(data_input)
+            temp_data = open(input_path)
         except:
             print("ERROR  Cannot open input file. Exiting...")
             exit(-1)
@@ -96,14 +144,3 @@ class db2v:
                     doc_temp.append(sent_temp)
                 data.extend(doc_temp)
         return data
-
-
-    def tokenize(self, data_input):
-        """
-        If provided a SparkContext, returns an RDD of tokenized sentences using the input file/dir.
-        If no SparkContext is provided, returns a list-of-lists of the same values instead.
-        If no input is provided, will default to the 20 Newsgroups data set.
-        """
-        if "xlsx" in data_input:
-            return self.xlsxTokenize(data_input)
-        return self.miscTokenize(data_input)
