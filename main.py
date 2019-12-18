@@ -7,6 +7,7 @@ import numpy as np
 from db2v import db2v
 from pyspark import SparkContext
 from gensim.models import Word2Vec, KeyedVectors
+from difflib import get_close_matches
 
 parser = argparse.ArgumentParser(description = 'TODO',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("input",help="Input file or directory to be used as corpus.")
@@ -62,5 +63,9 @@ if __name__ == "__main__":
                 print("INFO  Terms most similar to '%s':" % uin)
                 for rank, term in enumerate(similar_terms, 1):
                     print("%d. %s" % (rank, term))
-            except:
+            except KeyError:
                 print("ERROR  Term not found.")
+                close_terms = get_close_matches(uin, vocab, 5, .3)
+                if len(close_terms) != 0:
+                    print("INFO  Consider the following terms from the vocabulary:")
+                    print(close_terms)
